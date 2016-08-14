@@ -3,14 +3,17 @@ package com.gun.tm.tool.bq;
 import com.google.common.collect.Lists;
 import org.docx4j.Docx4J;
 import org.docx4j.Docx4jProperties;
+import org.docx4j.convert.in.xhtml.XHTMLImporterImpl;
 import org.docx4j.convert.out.HTMLSettings;
 import org.docx4j.convert.out.html.SdtToListSdtTagHandler;
 import org.docx4j.convert.out.html.SdtWriter;
+import org.docx4j.model.structure.PageSizePaper;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
 import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
 
@@ -126,6 +129,9 @@ public class BqTool {
         Elements tempElements;
 
         for (List<Element> elementList : tmList) {
+            //给每个子题的答案及解析加上编号
+            setSubNo(elementList);
+
             String tmno = "";
             tempElements = new Elements();
 
@@ -200,6 +206,8 @@ public class BqTool {
         Elements toElements = new Elements();
         for (List<Element> elementList : toElementList) {
             String tiHaoNo = "";
+            int hasDaanBiaoQian = 0;
+            int hasJieXiBiaoQian = 0;
             for (Element element : elementList) {
                 String eText = element.text();
                 if(isBiaoQian(element,"题号")){
@@ -214,13 +222,21 @@ public class BqTool {
                     String tempHtml = element.html();
                     element.html(reTextBiaoQian(tempHtml, "小题", ""));
                 }
-                if(isBiaoQian(element,"(解答|答案)")){
-                    String tempHtml = element.html();
-                    element.html(reTextBiaoQian(tempHtml, "(解答|答案)", "【答案】"));
+                if(isBiaoQian(element,"答案")){
+                    if(hasDaanBiaoQian == 0){
+                        hasDaanBiaoQian = 1;
+                    }else {
+                        String tempHtml = element.html();
+                        element.html(reTextBiaoQian(tempHtml, "答案", ""));
+                    }
                 }
                 if(isBiaoQian(element,"解析")){
-                    String tempHtml = element.html();
-                    element.html(reTextBiaoQian(tempHtml, "解析", "【解析】"));
+                    if(hasJieXiBiaoQian == 0){
+                        hasJieXiBiaoQian = 1;
+                    }else {
+                        String tempHtml = element.html();
+                        element.html(reTextBiaoQian(tempHtml, "解析", ""));
+                    }
                 }
                 if(isBiaoQian(element,"题型")){
                     String tempHtml = element.html();
@@ -240,10 +256,35 @@ public class BqTool {
 
     }
 
+    public static void toDocx(String inputHtmlFilePath) throws IOException, Docx4JException {
+        Document doc = Jsoup.parse(new File(inputHtmlFilePath),"UTF-8");
+        Elements links = doc.getElementsByTag("img"); //将link中的地址替换为绝对地址
+//        for (Element element : links) {
+//            String src = System.getProperty("user.dir")+"/sample-docs/"+element.attr("src");
+//            element.attr("src", src);
+//        }
+        doc.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.xhtml);
+        WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.createPackage(PageSizePaper.valueOf("A4"), true); //A4纸，//横版:true
+
+        //configSimSunFont(wordMLPackage); //配置中文字体
+
+        XHTMLImporterImpl xhtmlImporter = new XHTMLImporterImpl(wordMLPackage);
+
+        wordMLPackage.getMainDocumentPart().getContent().addAll( //导入 xhtml
+                xhtmlImporter.convert(doc.html(), doc.baseUri()));
+
+//        wordMLPackage.getMainDocumentPart().addAltChunk(AltChunkType.Html, html.getBytes());
+
+        wordMLPackage.save(new java.io.File(System.getProperty("user.dir") + "/sample-docs/test909090.docx"));
+    }
+
     public static void main(String[] args) throws IOException, Docx4JException {
+        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx-notype.html");
+//        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docxv2.html");
 //        String htmlPath = toHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx");
-//        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx-notype.html");
-        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docxv2.html");
+        toDocx("E:/IdeaProjects/Work/sample-docs/sample-docx.docx-notype-808080080.html");
     }
 
     public static String getNumber(String str){
@@ -378,5 +419,40 @@ public class BqTool {
         element.attr("class","a DocDefaults");
         element.html("<span class=\"a0 \" style=\"\">【"+biaoQianName+"】</span>");
         return element;
+    }
+
+    public static void setSubNo(List<Element> list){
+        String sunNo = "";
+        for (Element element : list) {
+            if (isBiaoQian(element,"小题")) {
+                String text = element.text();
+                sunNo = getSubNo(text);
+            }
+            if(isBiaoQian(element,"(解答|答案)")){
+                String tempHtml = element.html();
+                element.html(reTextBiaoQian(tempHtml, "(解答|答案)", "【答案】"+sunNo));
+            }
+            if(isBiaoQian(element,"解析")){
+                String tempHtml = element.html();
+                element.html(reTextBiaoQian(tempHtml, "解析", "【解析】"+sunNo));
+            }
+        }
+    }
+
+    public static String getSubNo(String str){
+        String numStr="";
+        String regEx="[〖【].+[〗】]\\(\\d+\\)";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(str);
+        while (m.find()){
+            numStr = m.group();
+        }
+        regEx="\\(\\d+\\)";
+        p = Pattern.compile(regEx);
+        m = p.matcher(numStr);
+        while (m.find()){
+            numStr = m.group();
+        }
+        return numStr;
     }
 }
