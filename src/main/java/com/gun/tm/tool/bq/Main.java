@@ -20,7 +20,7 @@ public class Main extends AbstractSample {
     // Config for non-command line version
     static {
 
-        inputfilepath = System.getProperty("user.dir") + "/sample-docxv2.docx";
+        inputfilepath = System.getProperty("user.dir") + "/sample-docs/sample-docx-new.docx";
 
         save = true;
     }
@@ -68,10 +68,10 @@ public class Main extends AbstractSample {
 
 	        See further http://www.css-101.org/articles/base-styles-sheet-for-webkit-based-browsers/
     	*/
-        String userCSS = "html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, img,  ol, ul, li, table, caption, tbody, tfoot, thead, tr, th, td " +
-                "{ margin: 0; padding: 0; border: 0;}" +
-                "body {line-height: 1;} ";
-        htmlSettings.setUserCSS(userCSS);
+//        String userCSS = "html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, img,  ol, ul, li, table, caption, tbody, tfoot, thead, tr, th, td " +
+//                "{ margin: 0; padding: 0; border: 0;}" +
+//                "body {line-height: 1;} ";
+//        htmlSettings.setUserCSS(userCSS);
 
 
         //Other settings (optional)
@@ -96,7 +96,7 @@ public class Main extends AbstractSample {
         // output to an OutputStream.
         OutputStream os;
         if (save) {
-            os = new FileOutputStream(inputfilepath + ".html");
+            os = new FileOutputStream(inputfilepath + "-xsl.html");
         } else {
             os = new ByteArrayOutputStream();
         }
