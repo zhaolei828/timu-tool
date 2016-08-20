@@ -20,7 +20,7 @@ public class Main extends AbstractSample {
     // Config for non-command line version
     static {
 
-        inputfilepath = System.getProperty("user.dir") + "/sample-docs/sample-docx-new.docx";
+        inputfilepath = System.getProperty("user.dir") + "/sample-docs/2016年山西省《学习方法报》2016-2017学年第一学期数学沪科八年级第2期《第12章  一次函数（12．1）自我评估》拆解题目数学试卷试卷编号：1111613021508021.docx";
 
         save = true;
     }
