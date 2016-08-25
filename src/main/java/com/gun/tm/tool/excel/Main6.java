@@ -1,6 +1,7 @@
 package com.gun.tm.tool.excel;
 
 import com.google.common.collect.Lists;
+import com.gun.tm.tool.model.Timu;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -38,10 +39,31 @@ public class Main6 {
         }
 
         List<List<Element>> reList = regroup(pElementList);
+        List<Timu> timuList = Lists.newArrayList();
         for (List<Element> elementList : reList) {
+            if(!isTiGan(elementList.get(0))){
+                continue;
+            }
+            Timu timu = new Timu();
+            List<String> xxList = Lists.newArrayList();
             for (Element element : elementList) {
                 System.out.println(element.text());
+                if (isTiGan(element)){
+                    timu.setTigan(element.text());
+                }
+
+                if(isXuanxiang(element)){
+                    String[] xx = splitXuanxiang(element);
+                    for (String s : xx) {
+                        if(!s.trim().equals("")){
+                            xxList.add(s.trim());
+                        }
+                    }
+                }
             }
+            timu.setXunxiang(makeXuanxiang(xxList));
+            timuList.add(timu);
+            System.out.println(timu.getXunxiang());
             System.out.println("=============");
         }
     }
@@ -50,7 +72,7 @@ public class Main6 {
         List<List<Element>> returnList = Lists.newArrayList();
         List<Element> tiMuElementList = Lists.newArrayList();
         for (Element element : pElementList) {
-            if(isTiGan(element)){
+            if(isTiGan(element) || isDaTi(element)){
                 if(tiMuElementList.size()>0){
                     returnList.add(tiMuElementList);
                 }
@@ -122,6 +144,50 @@ public class Main6 {
     }
 
     public static boolean isXuanxiang(Element element){
+        String text = element.text();
+        String regEx="^(A|B|C|D|E|F)(\\.||．)+";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(text);
+        if(m.find()){
+            return true;
+        }else {
+            return false;
+        }
+    }
 
+    public static String[] splitXuanxiang(Element element){
+        String text = element.text();
+        String regEx="(A|B|C|D|E|F)(\\.|．)+";
+        String[]xx = text.split(regEx);
+        return xx;
+    }
+
+    public static String makeXuanxiang(List<String> list){
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            switch (i) {
+                case 0:
+                    sb.append("A::");
+                    break;
+                case 1:
+                    sb.append("B::");
+                    break;
+                case 2:
+                    sb.append("C::");
+                    break;
+                case 3:
+                    sb.append("D::");
+                    break;
+                case 4:
+                    sb.append("E::");
+                    break;
+                case 5:
+                    sb.append("F::");
+                    break;
+                default:break;
+            }
+            sb.append(list.get(i)+"\n");
+        }
+        return sb.toString();
     }
 }

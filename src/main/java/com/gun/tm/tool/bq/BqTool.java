@@ -1,6 +1,7 @@
 package com.gun.tm.tool.bq;
 
 import com.google.common.collect.Lists;
+import com.gun.tm.tool.util.MD5Util;
 import org.docx4j.Docx4J;
 import org.docx4j.Docx4jProperties;
 import org.docx4j.convert.in.xhtml.XHTMLImporterImpl;
@@ -19,6 +20,7 @@ import org.jsoup.select.Elements;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -34,69 +36,45 @@ import java.util.regex.Pattern;
  */
 public class BqTool {
     private static boolean save = true;
+    private static String outDirPath = "F:\\项目\\其他\\转excel\\test\\out";
 
-    static String toHtml(String inputfilepath) throws Docx4JException, FileNotFoundException {
-
+    static void toHtml(String inputfilepath,String outfilepath) throws Docx4JException, FileNotFoundException {
         WordprocessingMLPackage wordMLPackage;
         if (inputfilepath==null) {
-            // Create a docx
-            System.out.println("No imput path passed, creating dummy document");
             wordMLPackage = WordprocessingMLPackage.createPackage();
         } else {
-            System.out.println("Loading file from " + inputfilepath);
             wordMLPackage = Docx4J.load(new java.io.File(inputfilepath));
         }
-
-        // HTML exporter setup (required)
-        // .. the HTMLSettings object
         HTMLSettings htmlSettings = Docx4J.createHTMLSettings();
 
-        htmlSettings.setImageDirPath(inputfilepath + "_files");
-        htmlSettings.setImageTargetUri(inputfilepath.substring(inputfilepath.lastIndexOf("/")+1)
-                + "_files");
+        String imgfilepath = outDirPath+"\\"+ MD5Util.md5(outfilepath)+"_files";
+        htmlSettings.setImageDirPath(imgfilepath);
+        htmlSettings.setImageTargetUri(imgfilepath);
         htmlSettings.setWmlPackage(wordMLPackage);
 
-        // list numbering:  comment out 1 or other of the following, depending on whether
-        // you want list numbering hardcoded, or done using <li>.
         SdtWriter.registerTagHandler("HTML_ELEMENT", new SdtToListSdtTagHandler());
 
-        // output to an OutputStream.
         OutputStream os;
-        String outFilePath=inputfilepath + "-ys.html";
         if (save) {
-            os = new FileOutputStream(outFilePath);
+            os = new FileOutputStream(outfilepath);
         } else {
             os = new ByteArrayOutputStream();
         }
 
-        // If you want XHTML output
         Docx4jProperties.setProperty("docx4j.Convert.Out.HTML.OutputMethodXML", true);
 
-        //Don't care what type of exporter you use
 		Docx4J.toHTML(htmlSettings, os, Docx4J.FLAG_NONE);
-        //Prefer the exporter, that uses a xsl transformation
-//        Docx4J.toHTML(htmlSettings, os, Docx4J.FLAG_EXPORT_PREFER_XSL);
-        //Prefer the exporter, that doesn't use a xsl transformation (= uses a visitor)
-//		Docx4J.toHTML(htmlSettings, os, Docx4J.FLAG_EXPORT_PREFER_NONXSL);
-
-        if (save) {
-            System.out.println("Saved: " + inputfilepath + ".html ");
-        } else {
-            System.out.println( ((ByteArrayOutputStream)os).toString() );
-        }
-
-        // Clean up, so any ObfuscatedFontPart temp files can be deleted
         if (wordMLPackage.getMainDocumentPart().getFontTablePart()!=null) {
             wordMLPackage.getMainDocumentPart().getFontTablePart().deleteEmbeddedFontTempFiles();
         }
         // This would also do it, via finalize() methods
         htmlSettings = null;
         wordMLPackage = null;
-        return outFilePath;
     }
 
-    static void parseHtml(String htmlInputFilePath) throws IOException {
-        Document doc = Jsoup.parse(new File(htmlInputFilePath), "UTF-8");
+    static void parseHtml(String htmlInputFilePath,String outfilepath) throws IOException {
+        File inputFile = new File(htmlInputFilePath);
+        Document doc = Jsoup.parse(inputFile, "UTF-8");
         /**
          * 题号、分类、学段、年级、一级知识点、二级知识点、三级知识点、四级知识点
          * 难度、能力结构、题型、题干、解答、解析
@@ -189,9 +167,9 @@ public class BqTool {
             }
             tempElements.add(zsd4Element);
 
-            Element pingXiElement = getBiaoQianElement(elementList,"试题评析");
+            Element pingXiElement = getBiaoQianElement(elementList,"试题评价");
             if(null == pingXiElement){
-                pingXiElement = createBiaoQianElement("试题评析");
+                pingXiElement = createBiaoQianElement("试题评价");
             }
             tempElements.add(pingXiElement);
 
@@ -201,6 +179,9 @@ public class BqTool {
             }
             tempElements.add(nljgElement);
 
+            Element blankElement = new Element(Tag.valueOf("p"),"");
+            tempElements.add(blankElement);
+
             toElementList.add(tempElements);
         }
         Elements toElements = new Elements();
@@ -209,6 +190,9 @@ public class BqTool {
             int hasDaanBiaoQian = 0;
             int hasJieXiBiaoQian = 0;
             for (Element element : elementList) {
+                if(null == element){
+                    continue;
+                }
                 String eText = element.text();
                 if(isBiaoQian(element,"题号")){
                     tiHaoNo = getNumber(eText);
@@ -249,42 +233,73 @@ public class BqTool {
         String html="<html><head><meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\" /></head><body>";
         html += toElements.outerHtml();
         html += "</body></html>";
-        FileOutputStream fos = new FileOutputStream("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx-notype-808080080.html",false);
+        FileOutputStream fos = new FileOutputStream(outfilepath,false);
         OutputStreamWriter osw = new OutputStreamWriter(fos);
         osw.write(html);
         osw.close();
-
     }
 
-    public static void toDocx(String inputHtmlFilePath) throws IOException, Docx4JException {
-        Document doc = Jsoup.parse(new File(inputHtmlFilePath),"UTF-8");
-        Elements links = doc.getElementsByTag("img"); //将link中的地址替换为绝对地址
-//        for (Element element : links) {
-//            String src = System.getProperty("user.dir")+"/sample-docs/"+element.attr("src");
-//            element.attr("src", src);
-//        }
+    public static void toDocx(String inputHtmlFilePath,String outfilepath) throws IOException, Docx4JException {
+        File inputFile = new File(inputHtmlFilePath);
+        File outFile = new File(outfilepath);
+        File outDirFilePath = outFile.getParentFile();
+        if(!outDirFilePath.exists()){
+            outDirFilePath.mkdirs();
+        }
+        Document doc = Jsoup.parse(inputFile,"UTF-8");
         doc.outputSettings()
                 .syntax(Document.OutputSettings.Syntax.xml)
                 .escapeMode(Entities.EscapeMode.xhtml);
         WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.createPackage(PageSizePaper.valueOf("A4"), true); //A4纸，//横版:true
-
-        //configSimSunFont(wordMLPackage); //配置中文字体
 
         XHTMLImporterImpl xhtmlImporter = new XHTMLImporterImpl(wordMLPackage);
 
         wordMLPackage.getMainDocumentPart().getContent().addAll( //导入 xhtml
                 xhtmlImporter.convert(doc.html(), doc.baseUri()));
 
-//        wordMLPackage.getMainDocumentPart().addAltChunk(AltChunkType.Html, html.getBytes());
-
-        wordMLPackage.save(new java.io.File(System.getProperty("user.dir") + "/sample-docs/test909090.docx"));
+        wordMLPackage.save(new java.io.File(outfilepath));
     }
 
     public static void main(String[] args) throws IOException, Docx4JException {
-        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx-notype.html");
+
+//        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx-notype.html");
 //        parseHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docxv2.html");
 //        String htmlPath = toHtml("E:\\IdeaProjects\\Work\\sample-docs\\sample-docx.docx");
-        toDocx("E:/IdeaProjects/Work/sample-docs/sample-docx.docx-notype-808080080.html");
+//        toDocx("E:/IdeaProjects/Work/sample-docs/sample-docx.docx-notype-808080080.html");
+        fileList("F:\\项目\\其他\\转excel\\test\\docxs");
+        for (String filepath : fileList) {
+            File file = new File(filepath);
+            String filename = file.getName();
+            try {
+                String outHtml1FilePath = outDirPath+"\\"+filename+"-1.html";
+                toHtml(filepath,outHtml1FilePath);
+                String outHtml2FilePath = outDirPath+"\\"+filename+"-2.html";
+                parseHtml(outHtml1FilePath,outHtml2FilePath);
+
+                String outDocxFilePath = filepath.replace("\\docxs\\","\\out\\");
+                toDocx(outHtml2FilePath,outDocxFilePath);
+            }catch (Exception e){
+
+            }
+
+        }
+    }
+
+    static List<String> fileList = Lists.newArrayList();
+    public static void fileList(String dirPath){
+        File dirFile = new File(dirPath);
+        String[] sonFilePaths = dirFile.list();
+        for (String sonFilePath : sonFilePaths) {
+            File sonFile = new File(dirPath+"\\"+sonFilePath);
+            if (sonFile.isDirectory()){
+                fileList(dirPath+"\\"+sonFilePath);
+            }else {
+                String filename = sonFile.getName();
+                if(filename.toLowerCase().endsWith("docx")){
+                    fileList.add(dirPath+"\\"+sonFilePath);
+                }
+            }
+        }
     }
 
     public static String getNumber(String str){
