@@ -6,16 +6,13 @@ package com.gun.tm.tool.model;
  */
 public class Timu {
     private String tigan;
-    private String xunxiang;
+    private String xuanxiang;
     private String daan;
     private String jiexi;
     private String tixing;
-    private String zsd1;
-    private String zsd2;
-    private String zsd3;
-    private String zsd4;
-    private String zsd5;
+    private String[] zsdArr;
     private String nljg;
+    private String pingjia;
 
     public String getTigan() {
         return tigan;
@@ -25,12 +22,12 @@ public class Timu {
         this.tigan = tigan;
     }
 
-    public String getXunxiang() {
-        return xunxiang;
+    public String getXuanxiang() {
+        return xuanxiang;
     }
 
-    public void setXunxiang(String xunxiang) {
-        this.xunxiang = xunxiang;
+    public void setXuanxiang(String xuanxiang) {
+        this.xuanxiang = xuanxiang;
     }
 
     public String getDaan() {
@@ -57,44 +54,12 @@ public class Timu {
         this.tixing = tixing;
     }
 
-    public String getZsd1() {
-        return zsd1;
+    public String[] getZsdArr() {
+        return zsdArr;
     }
 
-    public void setZsd1(String zsd1) {
-        this.zsd1 = zsd1;
-    }
-
-    public String getZsd2() {
-        return zsd2;
-    }
-
-    public void setZsd2(String zsd2) {
-        this.zsd2 = zsd2;
-    }
-
-    public String getZsd3() {
-        return zsd3;
-    }
-
-    public void setZsd3(String zsd3) {
-        this.zsd3 = zsd3;
-    }
-
-    public String getZsd4() {
-        return zsd4;
-    }
-
-    public void setZsd4(String zsd4) {
-        this.zsd4 = zsd4;
-    }
-
-    public String getZsd5() {
-        return zsd5;
-    }
-
-    public void setZsd5(String zsd5) {
-        this.zsd5 = zsd5;
+    public void setZsdArr(String[] zsdArr) {
+        this.zsdArr = zsdArr;
     }
 
     public String getNljg() {
@@ -103,5 +68,13 @@ public class Timu {
 
     public void setNljg(String nljg) {
         this.nljg = nljg;
+    }
+
+    public String getPingjia() {
+        return pingjia;
+    }
+
+    public void setPingjia(String pingjia) {
+        this.pingjia = pingjia;
     }
 }

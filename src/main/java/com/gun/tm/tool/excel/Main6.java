@@ -48,10 +48,12 @@ public class Main6 {
             List<String> xxList = Lists.newArrayList();
             for (Element element : elementList) {
                 System.out.println(element.text());
+                //题干
                 if (isTiGan(element)){
                     timu.setTigan(element.text());
                 }
 
+                //选项
                 if(isXuanxiang(element)){
                     String[] xx = splitXuanxiang(element);
                     for (String s : xx) {
@@ -60,10 +62,68 @@ public class Main6 {
                         }
                     }
                 }
+                //答案
+                //解析
+                //题型
+                if (isTixing(element)) {
+                    String tixingText = element.text();
+                    String tixing = "";
+                    try {
+                        tixing = tixingText.substring(4);
+                    }catch (Exception e){
+
+                    }
+                    timu.setTixing(tixing);
+                }
+                //知识点1～5/考点
+                if (isZsd(element)) {
+                    String zsdText = element.text();
+                    String zsd = "";
+                    String[] zsdArr = null;
+                    try {
+                        zsd = zsdText.substring(zsdText.indexOf("】"));
+                    }catch (Exception e){
+
+                    }
+                    if(zsd.trim().length()>0){
+                        if(zsd.contains(" ")){
+                            zsdArr = zsd.split(" ");
+                        }else if(zsd.contains("；")){
+                            zsdArr = zsd.split("；");
+                        }else {
+                            zsdArr = new String[]{};
+                        }
+                    }
+                    timu.setZsdArr(zsdArr);
+                }
+
+                //能力结构
+                if (isNengLiJieGou(element)) {
+                    String nengliText = element.text();
+                    String nengli = "";
+                    try {
+                        nengli = nengliText.substring(nengliText.indexOf("】"));
+                    }catch (Exception e){
+
+                    }
+                    timu.setNljg(nengli);
+                }
+
+                //评价
+                if (isPingJia(element)) {
+                    String pingJiaText = element.text();
+                    String pingjia = "";
+                    try {
+                        pingjia = pingJiaText.substring(pingJiaText.indexOf("】"));
+                    }catch (Exception e){
+
+                    }
+                    timu.setPingjia(pingjia);
+                }
             }
-            timu.setXunxiang(makeXuanxiang(xxList));
+            timu.setXuanxiang(makeXuanxiang(xxList));
             timuList.add(timu);
-            System.out.println(timu.getXunxiang());
+            System.out.println(timu.getXuanxiang());
             System.out.println("=============");
         }
     }
@@ -145,7 +205,54 @@ public class Main6 {
 
     public static boolean isXuanxiang(Element element){
         String text = element.text();
-        String regEx="^(A|B|C|D|E|F)(\\.||．)+";
+        String regEx="^(A|B|C|D|E|F)(\\.|．)+";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(text);
+        if(m.find()){
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    public static boolean isTixing(Element element){
+        String text = element.text();
+        String regEx="\"^(〖|【)?题型(〗|】)?.+";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(text);
+        if(m.find()){
+            return true;
+        }else {
+            return false;
+        }
+    }
+    public static boolean isZsd(Element element){
+        String text = element.text();
+        String regEx="\"^(〖|【)?(考点|三级知识点)(〗|】)?.+";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(text);
+        if(m.find()){
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    public static boolean isNengLiJieGou(Element element){
+        String text = element.text();
+        String regEx="\"^(〖|【)?能力结构(〗|】)?.+";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(text);
+        if(m.find()){
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    public static boolean isPingJia(Element element){
+        String text = element.text();
+        String regEx="\"^(〖|【)?难度等级(〗|】)?.+";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher(text);
         if(m.find()){
