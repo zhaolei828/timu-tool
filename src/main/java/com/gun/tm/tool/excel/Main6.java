@@ -69,7 +69,7 @@ public class Main6 {
                     String tixingText = element.text();
                     String tixing = "";
                     try {
-                        tixing = tixingText.substring(4);
+                        tixing = tixingText.substring(tixingText.indexOf("】")+1);
                     }catch (Exception e){
 
                     }
@@ -81,7 +81,7 @@ public class Main6 {
                     String zsd = "";
                     String[] zsdArr = null;
                     try {
-                        zsd = zsdText.substring(zsdText.indexOf("】"));
+                        zsd = zsdText.substring(zsdText.indexOf("】")+1);
                     }catch (Exception e){
 
                     }
@@ -102,7 +102,7 @@ public class Main6 {
                     String nengliText = element.text();
                     String nengli = "";
                     try {
-                        nengli = nengliText.substring(nengliText.indexOf("】"));
+                        nengli = nengliText.substring(nengliText.indexOf("】")+1);
                     }catch (Exception e){
 
                     }
@@ -114,7 +114,7 @@ public class Main6 {
                     String pingJiaText = element.text();
                     String pingjia = "";
                     try {
-                        pingjia = pingJiaText.substring(pingJiaText.indexOf("】"));
+                        pingjia = pingJiaText.substring(pingJiaText.indexOf("】")+1);
                     }catch (Exception e){
 
                     }
@@ -217,7 +217,7 @@ public class Main6 {
 
     public static boolean isTixing(Element element){
         String text = element.text();
-        String regEx="\"^(〖|【)?题型(〗|】)?.+";
+        String regEx="^(〖|【)?题型(〗|】)?.+";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher(text);
         if(m.find()){
@@ -228,7 +228,7 @@ public class Main6 {
     }
     public static boolean isZsd(Element element){
         String text = element.text();
-        String regEx="\"^(〖|【)?(考点|三级知识点)(〗|】)?.+";
+        String regEx="^(〖|【)?(考点|三级知识点)(〗|】)?.+";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher(text);
         if(m.find()){
@@ -240,7 +240,7 @@ public class Main6 {
 
     public static boolean isNengLiJieGou(Element element){
         String text = element.text();
-        String regEx="\"^(〖|【)?能力结构(〗|】)?.+";
+        String regEx="^(〖|【)?能力结构(〗|】)?.+";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher(text);
         if(m.find()){
@@ -252,7 +252,7 @@ public class Main6 {
 
     public static boolean isPingJia(Element element){
         String text = element.text();
-        String regEx="\"^(〖|【)?难度等级(〗|】)?.+";
+        String regEx="^(〖|【)?难度等级(〗|】)?.+";
         Pattern p = Pattern.compile(regEx);
         Matcher m = p.matcher(text);
         if(m.find()){
