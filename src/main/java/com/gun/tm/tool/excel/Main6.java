@@ -35,26 +35,19 @@ import java.util.regex.Pattern;
  */
 public class Main6 {
     public static void main(String[] args) throws IOException {
-        Document doc = Jsoup.parse(new File("d:\\3.html"), "UTF-8");
+        Document doc = Jsoup.parse(new File("F:\\中农网\\4.html"), "UTF-8");
         Element body = doc.body();
         Elements elements = body.children();
         List<Element> pElementList = Lists.newArrayList();
-        String txName="";
         for (Element element : elements) {
             if(element.tag().getName().equals("p")){
-                if(isDaTi(element)){
-                    txName = getDaTi(element);
-                }
                 pElementList.add(element);
-                if(isDaAn(element) && !txName.equals("")){
-                    Element txElement = createElement(txName);
-                    pElementList.add(pElementList.size()-1,txElement);
-                }
             }
         }
 
         List<List<Element>> reList = regroup(pElementList);
         List<Timu> timuList = Lists.newArrayList();
+        int blankDaAnCount = 0;
         for (List<Element> elementList : reList) {
             if(!isTiGan(elementList.get(0))){
                 continue;
@@ -64,7 +57,6 @@ public class Main6 {
             String tigan = "";
             boolean notDaAnFlag = true;
             boolean appenTiGanFlag = false;
-            boolean appenDaAnFlag = false;
 
             StringBuffer tiGanBuffer = new StringBuffer();
 
@@ -108,23 +100,25 @@ public class Main6 {
                 }
                 //答案 or 答案里含解析
                 if (isDaAn(element)){
-                    String daAn = element.text();
-                    daAnBuffer.append(daAn+"\n");
+                    StringBuffer daAnBufferTemp = new StringBuffer();
+                    String daAnFull = getBiaoQianText(element,daAnBufferTemp);
+//                    String daAn = element.text();
+                    daAnBuffer.append(daAnFull+"\n");
                     notDaAnFlag = false;
 
-                    String[] daAnJieXiArr = daAn.split("(解析|过程|分析)(:|：)?");
+                    String[] daAnJieXiArr = daAnFull.split("(解析|过程|分析)(:|：)?");
                     if (daAnJieXiArr.length>1) {
                         jieXiBuffer.append(daAnJieXiArr[1]);
                     }
                 }
-
-                if(isXiaoTi(element) && !notDaAnFlag){
-                    daAnBuffer.append(element.text()+"\n");
-                }
-
+//                if(isXiaoTi(element) && !notDaAnFlag){
+//                    daAnBuffer.append(element.text()+"\n");
+//                }
                 //解析
                 if (isJieXi(element)){
-                    jieXiBuffer.append(element.text().split("(〖|【)?(解析|过程|分析)(:|：)?(〗|】)?")[1]);
+                    StringBuffer jiexiBufferTemp = new StringBuffer();
+                    String jieXiFull = getBiaoQianText(element,jiexiBufferTemp);
+                    jieXiBuffer.append(jieXiFull.split("(〖|【)?(解析|过程|分析)(:|：)?(〗|】)?")[1]);
                 }
 
                 //题型
@@ -204,11 +198,14 @@ public class Main6 {
             }
             timu.setTigan(tigan+xiaoTiBuffer.toString());
             timu.setXuanxiang(makeXuanxiang(xxList));
-            String[] daAnArr = daAnBuffer.toString().split("(〖|【)?(答案|解)(:|：)?(〗|】)?");
+            String[] daAnArr = daAnBuffer.toString().split("(〖|【)?(答案|解|过程|分析)(:|：)?(〗|】)?");
             if (daAnArr.length>1){
                 timu.setDaan(daAnArr[1]);
             }else {
                 timu.setDaan(daAnArr[0]);
+            }
+            if(null == timu.getDaan() || timu.getDaan().length() == 0){
+                blankDaAnCount++;
             }
 
             timu.setJiexi(jieXiBuffer.toString());
@@ -216,17 +213,30 @@ public class Main6 {
             System.out.println(timu.getXuanxiang());
             System.out.println("=============");
         }
+        if(blankDaAnCount/timuList.size() > 0.5){
+
+        }
         writeIntoExcel(timuList);
     }
 
     public static List<List<Element>> regroup(List<Element> pElementList){
         List<List<Element>> returnList = Lists.newArrayList();
         List<Element> tiMuElementList = Lists.newArrayList();
+        String txName = "";
+        String txNameTemp = "";
         for (Element element : pElementList) {
+            if(isDaTi(element)){
+                txName = getDaTi(element);
+            }
             if(isTiGan(element) || isDaTi(element)){
                 if(tiMuElementList.size()>0){
+                    if (txName.trim().length()>0){
+                        Element txElement = createElement(txNameTemp);
+                        tiMuElementList.add(txElement);
+                    }
                     returnList.add(tiMuElementList);
                 }
+                txNameTemp = txName;
                 tiMuElementList = Lists.newArrayList();
             }
             tiMuElementList.add(element);
@@ -236,7 +246,12 @@ public class Main6 {
 
     public static boolean isTiGan(Element element){
         String regEx="^(\\d+(\\.|．)).+";
-        return isBiaoQian(element,regEx);
+        Element preElement = element.previousElementSibling();
+        String preElementText = "";
+        if(null != preElement){
+            preElementText = preElement.text().trim();
+        }
+        return isBiaoQian(element,regEx) && preElementText.length()==0;
     }
 
     public static boolean isXiaoTi(Element element){
@@ -359,15 +374,14 @@ public class Main6 {
         }
     }
 
-    public static String getBiaoQianText(Element element){
-        String text = element.text();
-        String content = "";
-        try {
-            content = text.substring(text.indexOf("】")+1);
-        }catch (Exception e){
-
+    public static String getBiaoQianText(Element element,StringBuffer sb){
+        sb.append(element.text().trim()+"\n");
+        Element nextElement = element.nextElementSibling();
+        String regEx="^(〖|【)([\\u4e00-\\u9fa5]+)(〗|】)";
+        if (!isTiGan(nextElement) && !isBiaoQian(nextElement,regEx)) {
+            getBiaoQianText(nextElement,sb);
         }
-        return content;
+        return sb.toString();
     }
 
     public static void  writeIntoExcel(List<Timu> list) throws IOException {
